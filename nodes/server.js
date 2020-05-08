@@ -1,6 +1,8 @@
 var request = require('request');
 const DeconzSocket = require('../lib/deconz-socket');
 
+const DEBUG = false;
+
 module.exports = function(RED) {
     class ServerNode {
         constructor(n) {
@@ -44,11 +46,127 @@ module.exports = function(RED) {
             }, node.refreshDiscoverInterval);
         }
 
+        discoverGateway(callback) {
+            // Perform POST to /api to obtain a token.
+            // User needs to activate "Authenticate app" in the Phoscon app (Settings > Gateway > Advanced) within 60 seconds before this.
+            var url = "http://" + node.ip + ":" + node.port + "/api/" + node.apikey;
+            var body = {
+                devicetype: 'node-red-contrib-deconz'
+            };
 
-        discoverDevices(callback, forceRefresh = false) {
+            var failDiscoveryProcess = function(error) {
+                node.discoverProcess = false;
+
+                if (DEBUG) {
+                    node.log('discoverDevices: Failed with error \'' + (error && error.msg) ? error.msg : 'unknown error' + '\'');
+                }
+
+                return callback(false);;
+            }
+
+            // Perform request to get hold of API token
+            request.post(url, { body: body }, function (error, result, data) {
+                if (error) {
+                    return failDiscoveryProcess({
+                        msg: 'Could not get API token',
+                        raw: error
+                    });
+                }
+
+                try {
+                    var dataParsed = JSON.parse(data);
+                } catch (e) {
+                    return failDiscoveryProcess({
+                        msg: 'Could not parse JSON response when requesting API key',
+                        raw: error
+                    });
+                }
+
+                if (typeof dataParsed.success !== "object" || typeof dataParsed.success["username"] !== "string") {
+                    return failDiscoveryProcess({
+                        msg: 'Response received when requesting API key was malformed'
+                    });
+                }
+                
+                node.apikey = dataParsed.success.username;
+            });
+        }
+
+
+        discoverDevices(callback, forceRefresh = false, allowGatewayDiscovery = false) {
             var node = this;
+            var failDiscoveryProcess = function(error) {
+                node.discoverProcess = false;
 
-            if (forceRefresh || node.items === undefined) {
+                if (DEBUG) {
+                    node.log('discoverDevices: Failed with error \'' + (error && error.msg) ? error.msg : 'unknown error' + '\'');
+                }
+
+                return callback(false);
+            };
+
+            if (allowGatewayDiscovery && !node.apikey) {
+                // Try to discover the gateway and obtain an API key
+                node.discoverGateway(function (gatewayDiscoveryError) {
+                    if (gatewayDiscoveryError) {
+                        return failDiscoveryProcess({
+                            msg: 'Could not discover gateway and/or obtain API key.'
+                        });
+                    }
+
+                    // Gateway discovered -- run discoverDevices again using the original callback
+                    // Do not allow another round of gateway discovery
+                    return node.discoverDevices(callback, forceRefresh, false)
+                });
+            }
+
+            if ((forceRefresh || node.items === undefined) && !node.apikey) {
+                // Perform POST to /api to obtain a token.
+                // User needs to activate "Authenticate app" in the Phoscon app (Settings > Gateway > Advanced) within 60 seconds before this.
+                var url = "http://" + node.ip + ":" + node.port + "/api/" + node.apikey;
+                var body = {
+                    devicetype: 'node-red-contrib-deconz'
+                };
+
+                var failDiscoveryProcess = function(error) {
+                    node.discoverProcess = false;
+                    callback(false);
+
+                    node.log('discoverDevices: Failed with error \'' + (error && error.msg) ? error.msg : 'unknown error' + '\'');
+
+                    return;
+                }
+
+                // Perform request to get hold of API token
+                request.post(url, { body: body }, function (error, result, data) {
+                    if (error) {
+                        return failDiscoveryProcess({
+                            msg: 'Could not get API token',
+                            raw: error
+                        });
+                    }
+
+                    try {
+                        var dataParsed = JSON.parse(data);
+                    } catch (e) {
+                        return failDiscoveryProcess({
+                            msg: 'Could not parse JSON response when requesting API key',
+                            raw: error
+                        });
+                    }
+
+                    if (typeof dataParsed.success !== "object" || typeof dataParsed.success["username"] !== "string") {
+                        return failDiscoveryProcess({
+                            msg: 'Response received when requesting API key was malformed'
+                        });
+                    }
+                    
+                    node.apikey = ''
+
+
+                });
+
+            } else if (forceRefresh || node.items === undefined) {
                 node.discoverProcess = true;
                 // node.log('discoverDevices: Refreshing devices list');
 
