@@ -146,12 +146,12 @@ module.exports = function(RED) {
                     if (deviceMeta !== undefined && deviceMeta && "device_id" in deviceMeta) {
 						if (command == 'scene'){ // make a new URL for recalling the scene
 							var groupid = ((node.config.device).split('group_').join(''));
-                            var url = 'http://' + node.server.ip + ':' + node.server.port + '/api/' + node.server.apikey + '/groups/' + groupid + '/scenes/' + payload + '/recall';
+                            var url = 'https://' + node.server.ip + ':' + node.server.port + '/api/' + node.server.apikey + '/groups/' + groupid + '/scenes/' + payload + '/recall';
 						} else if ((/group_/g).test(node.config.device)) {
                             var groupid = ((node.config.device).split('group_').join(''));
-                            var url = 'http://' + node.server.ip + ':' + node.server.port + '/api/' + node.server.apikey + '/groups/' + groupid + '/action';
+                            var url = 'https://' + node.server.ip + ':' + node.server.port + '/api/' + node.server.apikey + '/groups/' + groupid + '/action';
                         } else {
-                            var url = 'http://' + node.server.ip + ':' + node.server.port + '/api/' + node.server.apikey + '/lights/' + deviceMeta.device_id + '/state';
+                            var url = 'https://' + node.server.ip + ':' + node.server.port + '/api/' + node.server.apikey + '/lights/' + deviceMeta.device_id + '/state';
                         }
                         var post = {};
 						if (node.commandType == 'object' || node.commandType == 'homekit') {

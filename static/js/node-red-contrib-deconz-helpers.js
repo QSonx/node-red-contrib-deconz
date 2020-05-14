@@ -286,7 +286,7 @@ function deconz_initSettings(callback, inputSettings) {
         $.ajax({
             type: "POST",
             dataType: 'json',
-            url: 'http://'+settings.ip+':'+settings.port+'/api',
+            url: 'https://'+settings.ip+':'+settings.port+'/api',
             data: JSON.stringify({"devicetype":"Node-red"}),
             success: function(response){
                 var resp = response[0];
@@ -296,7 +296,7 @@ function deconz_initSettings(callback, inputSettings) {
                     $.ajax({
                         type: "GET",
                         dataType: 'json',
-                        url: 'http://'+settings.ip+':'+settings.port+'/api/'+settings.apikey+'/config',
+                        url: 'https://'+settings.ip+':'+settings.port+'/api/'+settings.apikey+'/config',
                         success: function(response){
                             if ('websocketport' in response) {
                                 settings.ws_port = response.websocketport;
