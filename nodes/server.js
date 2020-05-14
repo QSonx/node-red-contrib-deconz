@@ -52,7 +52,7 @@ module.exports = function(RED) {
                 node.discoverProcess = true;
                 // node.log('discoverDevices: Refreshing devices list');
 
-                var url = "http://" + node.ip + ":" + node.port + "/api/" + node.apikey;
+                var url = "https://" + node.ip + ":" + node.port + "/api/" + node.apikey;
                 // node.log('discoverDevices: Requesting: ' + url);
 
 
